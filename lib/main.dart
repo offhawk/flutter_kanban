@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kanban/components/my_card.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 void main() {
   runApp(MyApp());
@@ -15,9 +17,28 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   
-  List todo = ["aaa", "bbb"];
-  List doing = ["ccc", "ddd"];
-  List done = ["eee", "fff"];
+  List<Task> _taskList = [Task(type: 1, desc: 'teste', id: 1)];
+  int taskId = 0;
+
+  void updateList(Task task, int newIndex){
+    setState(() {
+      _taskList.removeWhere((task) => task.id == task.id);
+      _taskList = [..._taskList, Task(desc: task.desc, type: newIndex, id: task.id)];
+    });
+  }
+
+  void addList(Task task){
+    setState(() {
+      _taskList = [..._taskList, task];
+      taskId++;
+    });
+  }
+
+  void removeList(Task task){
+    setState(() {
+      _taskList.removeWhere((task) => task.id == task.id);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +58,6 @@ class _MyAppState extends State<MyApp> {
               textAlign: TextAlign.left,
             ),
             const SizedBox(height: 40),
-            // Scrollable List - Horizontal
             Expanded(
               child: SizedBox(
                 child: ListView(
@@ -49,7 +69,7 @@ class _MyAppState extends State<MyApp> {
                       onDropOver: (event) {
                         
                         final item = event.session.items.first;
-                                                
+    
                         if (event.session.allowedOperations.contains(DropOperation.copy)) {
                           return DropOperation.copy;
                         } else {
@@ -61,17 +81,8 @@ class _MyAppState extends State<MyApp> {
                         final item = event.session.items.first;
                         final data = item.localData;
                         if(data is Map){
-                          todo.add(data['content']);
-                          if(data['list'] == 0){
-                            todo.remove(data['content']);
-                          } else if (data['list'] == 1){
-                            doing.remove(data['content']);
-                          } else if (data['list'] == 2){
-                            done.remove(data['content']);
-                          }
-                        }
-
-                        print(todo);
+                          updateList(Task(desc: data['desc'], type: data['type'], id: data['id']), 0);
+                        };
 
                       },
                       child: Container(
@@ -80,7 +91,6 @@ class _MyAppState extends State<MyApp> {
                           height: MediaQuery.of(context).size.height,
                           child: Column(children: [
                             Row(
-                              // Header
                               children: [
                                 Stack(children: [
                                   Container(
@@ -112,11 +122,13 @@ class _MyAppState extends State<MyApp> {
                               ],
                             ),
                             ListView.builder(
-                              itemCount: todo.length,
+                              itemCount: _taskList.length,
                               shrinkWrap: true,
                               itemBuilder: (context, index) {
-                                final item = todo[index];
-                                return MyCard(content: item, list: 0);
+                                final item = _taskList[index];
+                                if(item.type == 0){
+                                  return MyCard(task: item);
+                                }
                               },
                             ),
                           ])),
@@ -138,11 +150,10 @@ class _MyAppState extends State<MyApp> {
                       onPerformDrop: (event) async {
                       
                         final item = event.session.items.first;
-                        doing.add(item);
-
-                      // data reader is available now
-                      // final reader = item.dataReader!;
-                      
+                        final data = item.localData;
+                        if(data is Map){
+                          updateList(Task(desc: data['desc'], type: data['type'], id: data['id']), 1);
+                        }
                       },
                       child: Container(
                         padding: EdgeInsets.fromLTRB(20, 0, 0, 0),
@@ -150,7 +161,6 @@ class _MyAppState extends State<MyApp> {
                         height: MediaQuery.of(context).size.height,
                         child: Column(children: [
                             Row(
-                              // Header
                               children: [
                                 Stack(children: [
                                   Container(
@@ -182,11 +192,13 @@ class _MyAppState extends State<MyApp> {
                               ],
                             ),
                             ListView.builder(
-                              itemCount: doing.length,
+                              itemCount: _taskList.length,
                               shrinkWrap: true,
                               itemBuilder: (context, index) {
-                                final item = doing[index];
-                                return MyCard(content: item, list: 1);
+                                final item = _taskList[index];
+                                if(item.type == 1){
+                                  return MyCard(task: item);
+                                }
                               },
                             ),
                           ])
@@ -199,6 +211,7 @@ class _MyAppState extends State<MyApp> {
                       onDropOver: (event) {
                         
                         final item = event.session.items.first;
+                        print(item);
                         
                         if (event.session.allowedOperations.contains(DropOperation.copy)) {
                           return DropOperation.copy;
@@ -209,11 +222,10 @@ class _MyAppState extends State<MyApp> {
                       onPerformDrop: (event) async {
                       
                         final item = event.session.items.first;
-                        done.add(item);
-
-                      // data reader is available now
-                      // final reader = item.dataReader!;
-                      
+                        final data = item.localData;
+                        if(data is Map){
+                          updateList(Task(desc: data['desc'], type: data['type'], id: data['id']), 2);
+                        }
                       },
                       child: Container(
                         padding: EdgeInsets.fromLTRB(20, 0, 20, 0),
@@ -221,7 +233,6 @@ class _MyAppState extends State<MyApp> {
                         height: MediaQuery.of(context).size.height,
                         child: Column(children: [
                             Row(
-                              // Header
                               children: [
                                 Stack(children: [
                                   Container(
@@ -254,11 +265,13 @@ class _MyAppState extends State<MyApp> {
                             ),
                             SizedBox(height: 20),
                             ListView.builder(
-                              itemCount: done.length,
+                              itemCount: _taskList.length,
                               shrinkWrap: true,
                               itemBuilder: (context, index) {
-                                final item = done[index];
-                                return MyCard(content: item, list: 3,);
+                                final item = _taskList[index];
+                                if(item.type == 2){
+                                  return MyCard(task: item);
+                                }
                               },
                             ),
                           ])
@@ -268,10 +281,6 @@ class _MyAppState extends State<MyApp> {
                 ),
               ),
             )
-
-            // A fazer
-            // Em Andamento
-            // Concluído
           ],
         )),
       ),
@@ -279,3 +288,10 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
+class Task{
+  String? desc;
+  int? type;
+  int? id;
+
+  Task({this.desc, this.type, this.id});
+}
